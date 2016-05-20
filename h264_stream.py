@@ -3,81 +3,70 @@
 def intlog2(x):
     return int(math.log2(x))
     
+   
+   
+def is_slice_type(slice_type, cmp_type):
+    if slice_type >= 5:
+        slice_type -= 5
+    if cmp_type >= 5:
+        cmp_type -= 5
+    if slice_type == cmp_type:
+        return 1
+    return 0 
+
+
+def more_rbsp_data(h, bs):
+    if bs_eof(bs):
+        return 0 
+    if bs_peek_u1(bs):
+        return 1
+    bs_t = xxx
+    bs_tmp = xxx
+    bs_clone(bs_tmp, bs)
+    bs_skip_u1(bs_tmp)
+    while not bs_eof(bs_tmp):
+        if bs_read_u1(bs_tmp == 1):
+            return 1
+    return 0
+
+
+def more_rbsp_trailing_data(h, b):
+     return not bs_eof(b)
+     
+
+def _read_ff_coded_number(b):
+    n1 = 0
+    n2 = bs_read_u8(b)
+    n1 += n2
+    while n2 == 0xff:
+        n2 = bs_read_u8(b)
+        n1 += n2
+    return n1
     
 
-int is_slice_type(int slice_type, int cmp_type)
-{
-    if (slice_type >= 5) { slice_type -= 5; }
-    if (cmp_type >= 5) { cmp_type -= 5; }
-    if (slice_type == cmp_type) { return 1; }
-    else { return 0; }
-}
+def _write_ff_coded_number(b, n):
+    while True:
+        if n > 0xff:
+            bs_write_u8(b, 0xff)
+            n -= 0xff
+        else:
+            bs_write_u8(b, n)
+            break
+        
 
-int more_rbsp_data(h264_stream_t* h, bs_t* bs)
-{
-    // TODO this version handles reading only. writing version?
+def debug_bytes(buf, _len):
+    for i in xrange(_len):
+        print(buf[i])
+        if (i+1) % 16 == 0:
+             print "\n"
+    print "\n"
 
-    // no more data
-    if (bs_eof(bs)) { return 0; }
 
-    // no rbsp_stop_bit yet
-    if (bs_peek_u1(bs) == 0) { return 1; }
+# 
+# 7.3.1 NAL unit syntax 
+def read_nal_unit(h, buf, size):
+     
 
-    // next bit is 1, is it the rsbp_stop_bit? only if the rest of bits are 0
-    bs_t bs_tmp;
-    bs_clone(&bs_tmp, bs);
-    bs_skip_u1(&bs_tmp);
-    while(!bs_eof(&bs_tmp))
-    {
-        // A later bit was 1, it wasn't the rsbp_stop_bit
-        if (bs_read_u1(&bs_tmp) == 1) { return 1; }
-    }
-
-    // All following bits were 0, it was the rsbp_stop_bit
-    return 0;
-}
-
-int more_rbsp_trailing_data(h264_stream_t* h, bs_t* b) { return !bs_eof(b); }
-
-int _read_ff_coded_number(bs_t* b)
-{
-    int n1 = 0;
-    int n2;
-    do 
-    {
-        n2 = bs_read_u8(b);
-        n1 += n2;
-    } while (n2 == 0xff);
-    return n1;
-}
-
-void _write_ff_coded_number(bs_t* b, int n)
-{
-    while (1)
-    {
-        if (n > 0xff)
-        {
-            bs_write_u8(b, 0xff);
-            n -= 0xff;
-        }
-        else
-        {
-            bs_write_u8(b, n);
-            break;
-        }
-    }
-}
-
-void debug_bytes(uint8_t* buf, int len)
-{
-    int i;
-    for (i = 0; i < len; i++)
-    {
-        printf("%02X ", buf[i]);
-        if ((i+1) % 16 == 0) { printf ("\n"); }
-    }
-    printf("\n");
-}
 
 
 
