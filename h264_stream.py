@@ -65,11 +65,50 @@ def debug_bytes(buf, _len):
 # 
 # 7.3.1 NAL unit syntax 
 def read_nal_unit(h, buf, size):
-     
-
-
-
-
+    nal_u = h.nal
+    nal_size = size
+    rbsp_size = size
+    rbsp_buf = xxx
+    
+    if True:
+        rc = nal_to_rbsp(buf, nal_size, rbsp_buf, rbsp_size)
+        if rc < 0:
+             return -1 
+    if False:
+        rbsp_size = size * 3 / 4
+    b = bs_new(rbsp_buf, rbsp_size)
+    # forbidden zero bit: 
+    bs_skip_u(b, 1)
+    nal_u.nal_ref_idc = bs_read_u(b, 2)
+    nal_u.nal_unit_type = bs_read_u(b, 5)
+    
+    if nal_u.nal_unit_type in [NAL_UNIT_TYPE_CODED_SLICE_IDR, NAL_UNIT_TYPE_CODED_SLICE_NON_IDR, NAL_UNIT_CODED_SLICE_AUX]:
+        read_slice_layer_rbsp(h, b)
+    elif nal_u.nal_unit_type == NAL_UNIT_TYPE_SEI:
+        read_sei_rbsp(h, b)
+    elif nal_u.nal_unit_type == NAL_UNIT_TYPE_SPS:
+        read_seq_parameter_set_rbsp(h, b)
+    elif nal_u.nal_unit_type == NAL_UNIT_TYPE_PPS:
+        read_pic_parameter_set_rbsp(h, b)
+    elif nal_u.nal_unit_type == NAL_UNIT_TYPE_END_OF_SEQUENCE:
+        read_end_of_seq_rbsp(h, b)
+    elif nal_u.nal_unit_type == NAL_UNIT_TYPE_END_OF_STREAM:
+        read_end_of_stream_rbsp(h, b)
+    elif nal_u.nal_unit_type in [NAL_UNIT_TYPE_FILLER, NAL_UNIT_TYPE_SPS_EXT, NAL_UNIT_TYPE_UNSPECIFIED, NAL_UNIT_TYPE_CODED_SLICE_DATA_PARTITION_A, NAL_UNIT_TYPE_CODED_SLICE_DATA_PARTITION_B, NAL_UNIT_TYPE_CODED_SLICE_DATA_PARTITION_C]:
+        return -1
+    if bs_overrun(b):
+        return -1
+    if False:
+        rbsp_size = bs_pos(b)
+        rc = rbsp_to_nal(rbsp_buf, rbsp_size, buf, nal_size)
+        if rc < 0:
+            return -1 
+    return nal_size
+    
+# 7.3.2.1 Sequence parameter set RBSP syntax
+def read_seq_parameter_set_rbsp(h, b):
+    sps = h.sps
+    if 
 void read_seq_parameter_set_rbsp(h264_stream_t* h, bs_t* b);
 void read_scaling_list(bs_t* b, int* scalingList, int sizeOfScalingList, int* useDefaultScalingMatrixFlag );
 void read_vui_parameters(h264_stream_t* h, bs_t* b);
@@ -88,96 +127,6 @@ void read_slice_header(h264_stream_t* h, bs_t* b);
 void read_ref_pic_list_reordering(h264_stream_t* h, bs_t* b);
 void read_pred_weight_table(h264_stream_t* h, bs_t* b);
 void read_dec_ref_pic_marking(h264_stream_t* h, bs_t* b);
-
-
-
-//7.3.1 NAL unit syntax
-int read_nal_unit(h264_stream_t* h, uint8_t* buf, int size)
-{
-    nal_t* nal = h->nal;
-
-    int nal_size = size;
-    int rbsp_size = size;
-    uint8_t* rbsp_buf = (uint8_t*)calloc(1, rbsp_size);
-
-    if( 1 )
-    {
-    int rc = nal_to_rbsp(buf, &nal_size, rbsp_buf, &rbsp_size);
-
-    if (rc < 0) { free(rbsp_buf); return -1; } // handle conversion error
-    }
-
-    if( 0 )
-    {
-    rbsp_size = size*3/4; // NOTE this may have to be slightly smaller (3/4 smaller, worst case) in order to be guaranteed to fit
-    }
-
-    bs_t* b = bs_new(rbsp_buf, rbsp_size);
-    /* forbidden_zero_bit */ bs_skip_u(b, 1);
-    nal->nal_ref_idc = bs_read_u(b, 2);
-    nal->nal_unit_type = bs_read_u(b, 5);
-
-    switch ( nal->nal_unit_type )
-    {
-        case NAL_UNIT_TYPE_CODED_SLICE_IDR:
-        case NAL_UNIT_TYPE_CODED_SLICE_NON_IDR:  
-        case NAL_UNIT_TYPE_CODED_SLICE_AUX:
-            read_slice_layer_rbsp(h, b);
-            break;
-
-#ifdef HAVE_SEI
-        case NAL_UNIT_TYPE_SEI:
-            read_sei_rbsp(h, b);
-            break;
-#endif
-
-        case NAL_UNIT_TYPE_SPS: 
-            read_seq_parameter_set_rbsp(h, b); 
-            break;
-
-        case NAL_UNIT_TYPE_PPS:   
-            read_pic_parameter_set_rbsp(h, b);
-            break;
-
-        case NAL_UNIT_TYPE_AUD:     
-            read_access_unit_delimiter_rbsp(h, b); 
-            break;
-
-        case NAL_UNIT_TYPE_END_OF_SEQUENCE: 
-            read_end_of_seq_rbsp(h, b);
-            break;
-
-        case NAL_UNIT_TYPE_END_OF_STREAM: 
-            read_end_of_stream_rbsp(h, b);
-            break;
-
-        case NAL_UNIT_TYPE_FILLER:
-        case NAL_UNIT_TYPE_SPS_EXT:
-        case NAL_UNIT_TYPE_UNSPECIFIED:
-        case NAL_UNIT_TYPE_CODED_SLICE_DATA_PARTITION_A:  
-        case NAL_UNIT_TYPE_CODED_SLICE_DATA_PARTITION_B: 
-        case NAL_UNIT_TYPE_CODED_SLICE_DATA_PARTITION_C:
-        default:
-            return -1;
-    }
-
-    if (bs_overrun(b)) { bs_free(b); free(rbsp_buf); return -1; }
-
-    if( 0 )
-    {
-    // now get the actual size used
-    rbsp_size = bs_pos(b);
-
-    int rc = rbsp_to_nal(rbsp_buf, &rbsp_size, buf, &nal_size);
-    if (rc < 0) { bs_free(b); free(rbsp_buf); return -1; }
-    }
-
-    bs_free(b);
-    free(rbsp_buf);
-
-    return nal_size;
-}
-
 
 
 //7.3.2.1 Sequence parameter set RBSP syntax
