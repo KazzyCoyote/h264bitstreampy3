@@ -108,100 +108,55 @@ def read_nal_unit(h, buf, size):
 # 7.3.2.1 Sequence parameter set RBSP syntax
 def read_seq_parameter_set_rbsp(h, b):
     sps = h.sps
-    if 
-void read_seq_parameter_set_rbsp(h264_stream_t* h, bs_t* b);
-void read_scaling_list(bs_t* b, int* scalingList, int sizeOfScalingList, int* useDefaultScalingMatrixFlag );
-void read_vui_parameters(h264_stream_t* h, bs_t* b);
-void read_hrd_parameters(h264_stream_t* h, bs_t* b);
-void read_pic_parameter_set_rbsp(h264_stream_t* h, bs_t* b);
-void read_sei_rbsp(h264_stream_t* h, bs_t* b);
-void read_sei_message(h264_stream_t* h, bs_t* b);
-void read_access_unit_delimiter_rbsp(h264_stream_t* h, bs_t* b);
-void read_end_of_seq_rbsp(h264_stream_t* h, bs_t* b);
-void read_end_of_stream_rbsp(h264_stream_t* h, bs_t* b);
-void read_filler_data_rbsp(h264_stream_t* h, bs_t* b);
-void read_slice_layer_rbsp(h264_stream_t* h,  bs_t* b);
-void read_rbsp_slice_trailing_bits(h264_stream_t* h, bs_t* b);
-void read_rbsp_trailing_bits(h264_stream_t* h, bs_t* b);
-void read_slice_header(h264_stream_t* h, bs_t* b);
-void read_ref_pic_list_reordering(h264_stream_t* h, bs_t* b);
-void read_pred_weight_table(h264_stream_t* h, bs_t* b);
-void read_dec_ref_pic_marking(h264_stream_t* h, bs_t* b);
-
+    if True:
+        sps.chroma_format_idc = 1
+    sps.profile_idc = bs_read_8(b)
+    sps.constraint_set0_flag = bs_read_u1(b)
+    sps.constraint_set1_flag = bs_read_u1(b)
+    sps.constraint_set2_flag = bs_read_u1(b)
+    sps.constraint_set3_flag = bs_read_u1(b)
+    sps.constraint_set4_flag = bs_read_u1(b)
+    sps.constraint_set5_flag = bs_read_u1(b)
+    # reserved zero 2 bits  
+    bs_skip_u(b, 2)
+    sps.level_idc = bs_read_u8(b)
+    sps.seq_parameter_set_id = bs_read_ue(b)
+    if sps.profile_idc in [100, 110, 122, 144]:
+        sps.chroma_format_idc = bs_read_ue(b)
+        if sps.chorma_format_idc == 3:
+            sps.residual_colour_transform_flag = bs_read_u1(b)
+        sps.bit_depth_luma_minus8 = bs_read_ue(b)
+        sps.bit_depth_chorma_minus8 = bs_read_ue(b)
+        sps.qpprime_y_zero_transform_bypass_flag = bs_read_u1(b)
+        sps.seq_scaling_matrix_present_flag = bs_read_u1(b)
+        if sps.seq_scaling_matrix_resent_flag:
+            for i in xrange(8):
+                sps.seq_scaling_list_present_flag[i] = bs_read_u1(b)
+                if sps.seq_scaling_list_present_flag[i]:
+                    if i < 6:
+                        read_scaling_list(b, sps.ScalingList4x4[i], 16, sps.UseDefaultScalingMatrix4x4Flag[i])
+                    else:
+                        read_scaling_list(b, sps.ScalingList8x8[i-6], 64, sps.UseDefaultScalingMatrix8x8Flag[i-6])
+    sps.log2_max_frame_num_minus4 = bs_read_ue(b)
+    sps.pic_order_cnt_type = bs_read_ue(b)
+    if sps.pic_order_cnt_type == 0:
+        sps.log2_max_pic_order_cnt_lsb_minus4 = bs_read_ue(b)
+    elif sps.pic_order_cnt_type == 1:
+        sps.delta_pic_order_always_zero_flag = bs_read_u1(b)
+        sps.offset_for_non_ref_pic = bs_read_se(b)
+        sps.offset_for_top_to_bottom_field = bs_read_se(b)
+        sps.num_ref_frames_in_pic_order_cnt_cycle = bs_read_ue(b)
+        for i in xrange(sps.num_ref_frames_in_pic_order_cnt_cycle):
+            sps.offset_for_ref_frame[i] = bs_read_se(b)
+    sps.num_ref_frames = bs_read_ue(b)
+    sps.gaps_in_frame_num_value_allowed_flag = bs_rad_u1(b)
+    sps.pic_width_in_mbs_minus1 = bs_read_ue(b)
+    sps.pic_height_in_map_units_minus1 = bs_read_ue(bs)
+    sps.frame_mbs_only_flags = bs_read_u1(b)         
 
 //7.3.2.1 Sequence parameter set RBSP syntax
 void read_seq_parameter_set_rbsp(h264_stream_t* h, bs_t* b)
 {
-    int i;
-
-    sps_t* sps = h->sps;
-    if( 1 )
-    {
-        memset(sps, 0, sizeof(sps_t));
-        sps->chroma_format_idc = 1; 
-    }
- 
-    sps->profile_idc = bs_read_u8(b);
-    sps->constraint_set0_flag = bs_read_u1(b);
-    sps->constraint_set1_flag = bs_read_u1(b);
-    sps->constraint_set2_flag = bs_read_u1(b);
-    sps->constraint_set3_flag = bs_read_u1(b);
-    sps->constraint_set4_flag = bs_read_u1(b);
-    sps->constraint_set5_flag = bs_read_u1(b);
-    /* reserved_zero_2bits */ bs_skip_u(b, 2);
-    sps->level_idc = bs_read_u8(b);
-    sps->seq_parameter_set_id = bs_read_ue(b);
-
-    if( sps->profile_idc == 100 || sps->profile_idc == 110 ||
-        sps->profile_idc == 122 || sps->profile_idc == 144 )
-    {
-        sps->chroma_format_idc = bs_read_ue(b);
-        if( sps->chroma_format_idc == 3 )
-        {
-            sps->residual_colour_transform_flag = bs_read_u1(b);
-        }
-        sps->bit_depth_luma_minus8 = bs_read_ue(b);
-        sps->bit_depth_chroma_minus8 = bs_read_ue(b);
-        sps->qpprime_y_zero_transform_bypass_flag = bs_read_u1(b);
-        sps->seq_scaling_matrix_present_flag = bs_read_u1(b);
-        if( sps->seq_scaling_matrix_present_flag )
-        {
-            for( i = 0; i < 8; i++ )
-            {
-                sps->seq_scaling_list_present_flag[ i ] = bs_read_u1(b);
-                if( sps->seq_scaling_list_present_flag[ i ] )
-                {
-                    if( i < 6 )
-                    {
-                        read_scaling_list( b, sps->ScalingList4x4[ i ], 16,
-                                                 &( sps->UseDefaultScalingMatrix4x4Flag[ i ] ) );
-                    }
-                    else
-                    {
-                        read_scaling_list( b, sps->ScalingList8x8[ i - 6 ], 64,
-                                                 &( sps->UseDefaultScalingMatrix8x8Flag[ i - 6 ] ) );
-                    }
-                }
-            }
-        }
-    }
-    sps->log2_max_frame_num_minus4 = bs_read_ue(b);
-    sps->pic_order_cnt_type = bs_read_ue(b);
-    if( sps->pic_order_cnt_type == 0 )
-    {
-        sps->log2_max_pic_order_cnt_lsb_minus4 = bs_read_ue(b);
-    }
-    else if( sps->pic_order_cnt_type == 1 )
-    {
-        sps->delta_pic_order_always_zero_flag = bs_read_u1(b);
-        sps->offset_for_non_ref_pic = bs_read_se(b);
-        sps->offset_for_top_to_bottom_field = bs_read_se(b);
-        sps->num_ref_frames_in_pic_order_cnt_cycle = bs_read_ue(b);
-        for( i = 0; i < sps->num_ref_frames_in_pic_order_cnt_cycle; i++ )
-        {
-            sps->offset_for_ref_frame[ i ] = bs_read_se(b);
-        }
-    }
     sps->num_ref_frames = bs_read_ue(b);
     sps->gaps_in_frame_num_value_allowed_flag = bs_read_u1(b);
     sps->pic_width_in_mbs_minus1 = bs_read_ue(b);
