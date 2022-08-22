@@ -58,8 +58,8 @@ def debug_bytes(buf, _len):
     for i in xrange(_len):
         print(buf[i])
         if (i+1) % 16 == 0:
-             print "\n"
-    print "\n"
+             print("\n")
+    print("\n")
 
 
 # 
