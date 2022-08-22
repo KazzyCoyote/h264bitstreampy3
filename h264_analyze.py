@@ -9,10 +9,10 @@ BUFSIZE = 32 * 1024 * 1024
 # TODO: make this work
 
 def main(): 
-    print "calling h264 analyze!" 
+    print("calling h264 analyze!")
     args = sys.argv
     if len(args) != 2: 
-        print "error! should give the file name" 
+        print("error! should give the file name")
         break
     input_file = open(args[1])
     h = h264.init_h264_stream()
