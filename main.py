@@ -14,10 +14,10 @@ import h264_stream as h264
 
 
 def main(): 
-    print "calling main"
-    print sys.argv
+    print("calling main")
+    print(sys.argv)
     if len(sys.argv) > 1:
-        print "input file: " + sys.argv[1]
+        print("input file: " + sys.argv[1])
     # read the input file 
     input_file = open(sys.argv[1])
     buf = input_file.read(xxxx)
